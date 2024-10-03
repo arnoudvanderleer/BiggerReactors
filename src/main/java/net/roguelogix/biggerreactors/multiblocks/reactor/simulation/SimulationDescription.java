@@ -12,34 +12,53 @@ import net.roguelogix.phosphophyllite.serialization.IPhosphophylliteSerializable
 import net.roguelogix.phosphophyllite.serialization.PhosphophylliteCompound;
 import net.roguelogix.phosphophyllite.util.NonnullDefault;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
-@ParametersAreNonnullByDefault
+import org.joml.Vector3i;
+
 @NonnullDefault
 public class SimulationDescription implements IPhosphophylliteSerializable {
     
     public SimulationDescription() {
     }
     
-    public SimulationDescription(@Nonnull PhosphophylliteCompound compound) {
+    public SimulationDescription(PhosphophylliteCompound compound) {
         load(compound);
+    }
+
+    public SimulationDescription(Vector3i size, Map<Vector3i, Integer> blocks) {
+        x = size.x;
+        y = size.y;
+        z = size.z;
+
+        manifoldLocations = new boolean[x][y][z];
+        controlRodLocations = new boolean[x][z];
+        moderatorProperties = new ReactorModeratorRegistry.IModeratorProperties[x][y][z];
+
+        for (Map.Entry<Vector3i, Integer> entry : blocks.entrySet()) {
+            Vector3i p = entry.getKey();
+            int b = entry.getValue();
+            if (b == -1) {
+                if (controlRodLocations[p.x][p.z]) {
+                    continue;
+                }
+                controlRodLocations[p.x][p.z] = true;
+                controlRodCount++;
+                continue;
+            }
+            moderatorProperties[p.x][p.y][p.z] = ReactorModeratorRegistry.registry[b];
+        }
     }
     
     int x = 0, y = 0, z = 0;
-    @Nonnull
     // accessing this constant may cause a classloading crash when loaded w/o forge, need to check that and move stuff as needed
     ReactorModeratorRegistry.IModeratorProperties defaultModeratorProperties = ReactorModeratorRegistry.ModeratorProperties.EMPTY_MODERATOR;
-    @Nullable
     ReactorModeratorRegistry.IModeratorProperties[][][] moderatorProperties = null;
-    @Nullable
     boolean[][][] manifoldLocations = null;
     int manifoldCount = 0;
-    @Nullable
     boolean[][] controlRodLocations = null;
     int controlRodCount = 0;
     public void setSize(int x, int y, int z) {
@@ -64,7 +83,7 @@ public class SimulationDescription implements IPhosphophylliteSerializable {
         defaultModeratorProperties = properties;
     }
     
-    public void setModeratorProperties(int x, int y, int z, @Nullable ReactorModeratorRegistry.IModeratorProperties properties) {
+    public void setModeratorProperties(int x, int y, int z, ReactorModeratorRegistry.IModeratorProperties properties) {
         if (moderatorProperties == null) {
             if (properties == null) {
                 return;
@@ -189,7 +208,6 @@ public class SimulationDescription implements IPhosphophylliteSerializable {
         return manifoldCount;
     }
     
-    @Nullable
     public ReactorModeratorRegistry.IModeratorProperties moderatorPropertiesAt(int x, int y, int z) {
         assert moderatorProperties != null;
         return moderatorProperties[x][y][z];
@@ -201,7 +219,6 @@ public class SimulationDescription implements IPhosphophylliteSerializable {
     }
     
     @Override
-    @Nullable
     public PhosphophylliteCompound save() {
         final var compound = new PhosphophylliteCompound();
         if (moderatorProperties == null || manifoldLocations == null || controlRodLocations == null) {
@@ -253,7 +270,7 @@ public class SimulationDescription implements IPhosphophylliteSerializable {
     }
     
     @Override
-    public void load(@Nonnull PhosphophylliteCompound compound) {
+    public void load(PhosphophylliteCompound compound) {
         setSize(compound.getInt("x"), compound.getInt("y"), compound.getInt("z"));
         final ArrayList<ReactorModeratorRegistry.ModeratorProperties> moderatorProperties = new ArrayList<>();
         {

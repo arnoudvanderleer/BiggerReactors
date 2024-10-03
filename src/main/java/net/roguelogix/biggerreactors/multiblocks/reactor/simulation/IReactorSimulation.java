@@ -6,12 +6,7 @@ import net.roguelogix.phosphophyllite.debug.IDebuggable;
 import net.roguelogix.phosphophyllite.serialization.IPhosphophylliteSerializable;
 import net.roguelogix.phosphophyllite.serialization.PhosphophylliteCompound;
 import net.roguelogix.phosphophyllite.util.NonnullDefault;
-import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
-
-@ParametersAreNonnullByDefault
 @NonnullDefault
 public interface IReactorSimulation extends IPhosphophylliteSerializable, IDebuggable {
     
@@ -21,15 +16,12 @@ public interface IReactorSimulation extends IPhosphophylliteSerializable, IDebug
      */
     void tick(boolean active);
     
-    @Nullable
     IBattery battery();
     
-    @Nullable
     ICoolantTank coolantTank();
     
     IFuelTank fuelTank();
     
-    @Nullable
     ControlRod controlRodAt(int x, int z);
     
     void setAllControlRodInsertions(double insertion);
@@ -50,7 +42,6 @@ public interface IReactorSimulation extends IPhosphophylliteSerializable, IDebug
         return true;
     }
     
-    @NotNull
     @Override
     PhosphophylliteCompound save();
     

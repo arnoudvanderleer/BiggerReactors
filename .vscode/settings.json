@@ -1,0 +1,9 @@
+{
+    "java.dependency.packagePresentation": "hierarchical",
+    "java.project.sourcePaths": [
+        "src/main/java",
+        "Phosphophyllite/src/main/java",
+        "JOML/src/main/java",
+    ],
+    "java.project.referencedLibraries": []
+}

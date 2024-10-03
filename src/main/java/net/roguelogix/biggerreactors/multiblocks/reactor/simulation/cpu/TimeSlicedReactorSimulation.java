@@ -16,9 +16,9 @@ public class TimeSlicedReactorSimulation extends BaseReactorSimulation {
     private int currentRod = 0;
     private int rodOffset = 0;
     
-    public TimeSlicedReactorSimulation(SimulationDescription simulationDescription, SimulationConfiguration configuration) {
+    public TimeSlicedReactorSimulation(SimulationDescription simulationDescription, SimulationConfiguration configuration, int seed) {
         super(simulationDescription, configuration);
-        Collections.shuffle(Arrays.asList(controlRods), new Random());
+        Collections.shuffle(Arrays.asList(controlRods), new Random(seed));
     }
     
     protected double radiate() {

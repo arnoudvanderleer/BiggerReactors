@@ -7,12 +7,8 @@ import net.roguelogix.biggerreactors.registries.ReactorModeratorRegistry;
 import net.roguelogix.phosphophyllite.debug.DebugInfo;
 import net.roguelogix.phosphophyllite.serialization.PhosphophylliteCompound;
 import net.roguelogix.phosphophyllite.util.HeatBody;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2ic;
 import org.joml.Vector3ic;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public abstract class BaseReactorSimulation implements IReactorSimulation {
     
@@ -31,9 +27,7 @@ public abstract class BaseReactorSimulation implements IReactorSimulation {
     protected final HeatBody stackHeat = new HeatBody();
     protected final HeatBody ambientHeat = new HeatBody();
     
-    @Nullable
     protected final Battery battery;
-    @Nullable
     protected final CoolantTank coolantTank;
     protected final HeatBody output;
     
@@ -219,13 +213,11 @@ public abstract class BaseReactorSimulation implements IReactorSimulation {
     }
     
     @Override
-    @Nullable
     public IBattery battery() {
         return battery;
     }
     
     @Override
-    @Nullable
     public ICoolantTank coolantTank() {
         return coolantTank;
     }
@@ -235,7 +227,6 @@ public abstract class BaseReactorSimulation implements IReactorSimulation {
         return fuelTank;
     }
     
-    @Nullable
     @Override
     public ControlRod controlRodAt(int x, int z) {
         if (x < 0 || x >= this.x || z < 0 || z >= this.z) {
@@ -275,7 +266,6 @@ public abstract class BaseReactorSimulation implements IReactorSimulation {
         return ambientHeat.temperature();
     }
     
-    @NotNull
     @Override
     public PhosphophylliteCompound save() {
         var compound = new PhosphophylliteCompound();
@@ -293,7 +283,7 @@ public abstract class BaseReactorSimulation implements IReactorSimulation {
     }
     
     @Override
-    public void load(@Nonnull PhosphophylliteCompound compound) {
+    public void load(PhosphophylliteCompound compound) {
         fuelTank.load(compound.getCompound("fuelTank"));
         if (coolantTank != null) {
             coolantTank.load(compound.getCompound("coolantTank"));

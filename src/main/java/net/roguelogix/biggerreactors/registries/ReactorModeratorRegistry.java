@@ -1,23 +1,5 @@
 package net.roguelogix.biggerreactors.registries;
 
-import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.TagKey;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.material.Fluid;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.OnDatapackSyncEvent;
-import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.roguelogix.biggerreactors.BiggerReactors;
 import net.roguelogix.biggerreactors.Config;
 import net.roguelogix.phosphophyllite.config.ConfigValue;
@@ -103,16 +85,6 @@ public class ReactorModeratorRegistry {
         
     }
     
-    private final static HashMap<Block, ModeratorProperties> registry = new HashMap<>();
-    
-    public static boolean isBlockAllowed(Block block) {
-        return registry.containsKey(block);
-    }
-    
-    public static ModeratorProperties blockModeratorProperties(Block block) {
-        return registry.get(block);
-    }
-    
     // TODO: unify these names across all registries
     private enum RegistryType {
         tag,
@@ -121,174 +93,49 @@ public class ReactorModeratorRegistry {
         fluid
     }
     
-    private static class ReactorModeratorJsonData {
-    
-        @ConfigValue
-        RegistryType type = RegistryType.tag;
-    
-        @ConfigValue
-        ResourceLocation location = new ResourceLocation("dirt");
-    
-        @ConfigValue(range = "[0, 1]")
-        double absorption;
-    
-        @ConfigValue(range = "[0, 1]")
-        double efficiency;
-    
-        @ConfigValue(range = "[1,)")
-        double moderation;
-    
-        @ConfigValue(range = "[0,)")
-        double conductivity;
-    }
-    
-    private static final DatapackLoader<ReactorModeratorJsonData> dataLoader = new DatapackLoader<>(ReactorModeratorJsonData::new);
-    
-    public static void loadRegistry() {
-        BiggerReactors.LOGGER.info("Loading reactor moderators");
-        registry.clear();
-        
-        List<ReactorModeratorJsonData> data = dataLoader.loadAll(new ResourceLocation("biggerreactors:ebcr/moderators"));
-        BiggerReactors.LOGGER.info("Loaded " + data.size() + " moderator data entries");
-        
-        for (ReactorModeratorJsonData moderatorData : data) {
-            
-            ModeratorProperties properties = new ModeratorProperties(moderatorData.absorption, moderatorData.efficiency, moderatorData.moderation, moderatorData.conductivity);
-    
-            switch (moderatorData.type) {
-                case tag -> {
-                    var blockTagOptional = BuiltInRegistries.BLOCK.getTag(TagKey.create(BuiltInRegistries.BLOCK.key(), moderatorData.location));
-                    blockTagOptional.ifPresent(holders -> holders.forEach(blockHolder -> {
-                        var element = blockHolder.value();
-                        registry.put(element, properties);
-                        BiggerReactors.LOGGER.debug("Loaded moderator " + BuiltInRegistries.BLOCK.getKey(element));
-                    }));
-                }
-                case registry -> {
-                    // cant check against air, because air is a valid thing to load
-                    if (BuiltInRegistries.BLOCK.containsKey(moderatorData.location)) {
-                        registry.put(BuiltInRegistries.BLOCK.get(moderatorData.location), properties);
-                        BiggerReactors.LOGGER.debug("Loaded moderator " + moderatorData.location);
-                    }
-                }
-                case fluidtag -> {
-                    var fluidTagOptional = BuiltInRegistries.FLUID.getTag(TagKey.create(BuiltInRegistries.FLUID.key(), moderatorData.location));
-                    fluidTagOptional.ifPresent(holders -> holders.forEach(fluidHolder -> {
-                        var element = fluidHolder.value();
-                        Block elementBlock = element.defaultFluidState().createLegacyBlock().getBlock();
-                        registry.put(elementBlock, properties);
-                        BiggerReactors.LOGGER.debug("Loaded moderator " + BuiltInRegistries.FLUID.getKey(element));
-                    }));
-                }
-                case fluid -> {
-                    // cant check against air, because air is a valid thing to load
-                    if (BuiltInRegistries.FLUID.containsKey(moderatorData.location)) {
-                        Fluid fluid = BuiltInRegistries.FLUID.get(moderatorData.location);
-                        assert fluid != null;
-                        Block block = fluid.defaultFluidState().createLegacyBlock().getBlock();
-                        registry.put(block, properties);
-                        BiggerReactors.LOGGER.debug("Loaded moderator " + moderatorData.location);
-                    }
-                }
-            }
+    public enum Color {
+        RESET("\u001B[0m"),
+        BLACK("\u001B[30m"),
+        RED("\u001B[31m"),
+        GREEN("\u001B[32m"),
+        YELLOW("\u001B[33m"),
+        BLUE("\u001B[34m"),
+        PURPLE("\u001B[35m"),
+        CYAN("\u001B[36m"),
+        WHITE("\u001B[37m");
+
+        public final String v;
+
+        private Color(String v) {
+            this.v = v;
         }
-        BiggerReactors.LOGGER.info("Loaded " + registry.size() + " moderator entries");
-    }
-    
-    public static class Client {
-        
-        private static final SimplePhosChannel CHANNEL = new SimplePhosChannel(new ResourceLocation(BiggerReactors.modid, "moderator_sync_channel"), Client::readSync, null);
-        private static final ObjectOpenHashSet<Block> moderatorBlocks = new ObjectOpenHashSet<>();
-        private static final Object2ObjectOpenHashMap<Block, ModeratorProperties> moderatorProperties = new Object2ObjectOpenHashMap<>();
-        
-        @OnModLoad
-        private static void onModLoad() {
-            NeoForge.EVENT_BUS.addListener(Client::datapackEvent);
-            if (FMLEnvironment.dist.isClient()) {
-                NeoForge.EVENT_BUS.addListener(Client::toolTipEvent);
-            }
-        }
-        
-        public static void datapackEvent(OnDatapackSyncEvent e) {
-            final var player = e.getPlayer();
-            if (player == null) {
-                return;
-            }
-            
-            if (BiggerReactors.LOG_DEBUG) {
-                BiggerReactors.LOGGER.debug("Sending moderator list to player: " + player);
-            }
-            CHANNEL.sendToPlayer(player, writeSync());
-        }
-        
-        private static PhosphophylliteCompound writeSync() {
-            final var list = new ObjectArrayList<String>();
-            final var propertiesList = new ObjectArrayList<DoubleArrayList>();
-            for (final var value : registry.entrySet()) {
-                final var location = BuiltInRegistries.BLOCK.getKey(value.getKey());
-                if (location == null) {
-                    continue;
-                }
-                list.add(location.toString());
-                
-                var properties = new DoubleArrayList();
-                properties.add(value.getValue().absorption);
-                properties.add(value.getValue().heatEfficiency);
-                properties.add(value.getValue().moderation);
-                properties.add(value.getValue().heatConductivity);
-                propertiesList.add(properties);
-            }
-            final var compound = new PhosphophylliteCompound();
-            compound.put("list", list);
-            compound.put("propertiesList", propertiesList);
-            return compound;
-        }
-        
-        private static void readSync(PhosphophylliteCompound compound, IPayloadContext context) {
-            moderatorBlocks.clear();
-            //noinspection unchecked
-            final var list = (List<String>) compound.getList("list");
-            //noinspection unchecked
-            final var propertiesList = (List<DoubleArrayList>) compound.getList("propertiesList");
-            if (BiggerReactors.LOG_DEBUG) {
-                BiggerReactors.LOGGER.debug("Received moderator list from server with length of " + list.size());
-            }
-            for (int i = 0; i < list.size(); i++) {
-                var blockLocation = list.get(i);
-                var properties = propertiesList.get(i);
-                final var block = BuiltInRegistries.BLOCK.get(new ResourceLocation(blockLocation));
-                if (block == null) {
-                    return;
-                }
-                if (BiggerReactors.LOG_DEBUG) {
-                    BiggerReactors.LOGGER.debug("Block " + block + " added as moderator on client");
-                }
-                moderatorBlocks.add(block);
-                moderatorProperties.put(block, new ModeratorProperties(properties.getDouble(0), properties.getDouble(1), properties.getDouble(2), properties.getDouble(3)));
-            }
-        }
-        
-        public static void toolTipEvent(ItemTooltipEvent event) {
-            final var item = event.getItemStack().getItem();
-            if (item instanceof BlockItem blockItem) {
-                if (!moderatorBlocks.contains(blockItem.getBlock())) {
-                    return;
-                }
-            } else if (item instanceof BucketItem bucketItem) {
-                final var fluidBlock = bucketItem.getFluid().defaultFluidState().createLegacyBlock().getBlock();
-                if (fluidBlock.defaultBlockState().isAir() || !moderatorBlocks.contains(fluidBlock)) {
-                    return;
-                }
-            } else {
-                return;
-            }
-            if (Minecraft.getInstance().options.advancedItemTooltips || Config.CONFIG.AlwaysShowTooltips) {
-                event.getToolTip().add(Component.translatable("tooltip.biggerreactors.is_a_moderator"));
-            }
-        }
-        
-        public static void forEach(BiConsumer<Block, IModeratorProperties> consumer) {
-            moderatorProperties.forEach(consumer);
+
+        @Override
+        public String toString() {
+            return v;
         }
     }
+
+    // The moderator properties that the values in Specimen.moderators refer to.
+    // When you add or remove an entry here, you should also add or remove an entry in the colors array below.
+    public static ReactorModeratorRegistry.IModeratorProperties[] registry = {
+        new ModeratorProperties(0.1,  0.25, 1.1, 0.05), // 0: air
+        new ModeratorProperties(0.66, 0.9,  3.5, 3.5 ), // 1: allthemodium
+        new ModeratorProperties(0.15, 0.75, 8,   4   ), // 2: vibranium
+        new ModeratorProperties(0.95, 0.82, 2,   5   ), // 3: unobtanium
+        // new ModeratorProperties(0.1,  0.5,  2,   2   ), // 4: graphite
+        // new ModeratorProperties(0.55, 0.85, 1.5, 3   ), // 5: diamond
+        // new ModeratorProperties(0.55, 0.85, 1.5, 2.5 ), // 6: emerald
+    };
+
+    // The colors that are used to print the different materials in the terminal
+    public static final Color[] colors = new Color[]{
+        Color.WHITE,    // 0: air
+        Color.YELLOW,   // 1: allthemodium
+        Color.BLUE,     // 2: vibranium
+        Color.PURPLE,   // 3: unobtanium
+        // Color.BLACK,    // 4: graphite
+        // Color.CYAN,     // 5: diamond
+        // Color.GREEN,    // 6: emerald
+    };
 }
