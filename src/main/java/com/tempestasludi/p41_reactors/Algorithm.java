@@ -5,9 +5,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
-import com.tempestasludi.p41_reactors.data.Result;
+import com.tempestasludi.p41_reactors.data.Score;
 
-public class Simulation {
+public class Algorithm {
     private static final int seed = 1; // The random seed, for reproducibility
     private static final int poolSize = 500; // The number of specimens in the pool
     private static final float mutationRate = 5.0f; // The expected number of mutations per specimen
@@ -24,8 +24,8 @@ public class Simulation {
     public static final boolean zSymmetry = true;
     public static final boolean xzSymmetry = true;
 
-    // Compares the evaluation results of two specimens. In this case, we are looking for the specimens with the highest fuel efficiency
-    public static int compare(Result r1, Result r2) { 
+    // Compares the scores of two specimens. In this case, we are looking for the specimens with the highest fuel efficiency
+    public static int compare(Score r1, Score r2) { 
         return Double.compare(r1.efficiency(), r2.efficiency());
     }
 

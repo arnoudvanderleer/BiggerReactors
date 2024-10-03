@@ -4,3 +4,6 @@
 [submodule "Quartz"]
 	path = Quartz
 	url = https://github.com/BiggerSeries/Quartz
+[submodule "JOML"]
+	path = JOML
+	url = git@github.com:JOML-CI/JOML.git

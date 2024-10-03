@@ -15,7 +15,7 @@ import net.roguelogix.biggerreactors.multiblocks.reactor.simulation.cpu.TimeSlic
 import net.roguelogix.biggerreactors.registries.ReactorModeratorRegistry;
 import net.roguelogix.biggerreactors.Config;
 
-import com.tempestasludi.p41_reactors.data.Result;
+import com.tempestasludi.p41_reactors.data.Score;
 import com.tempestasludi.p41_reactors.data.Symmetry;
 
 public class Specimen implements Comparable<Specimen> {
@@ -31,7 +31,7 @@ public class Specimen implements Comparable<Specimen> {
     private int seed;
 
     // A cache for the evaluation value of this specimen
-    private Result value = null;
+    private Score value = null;
 
     // Initializes the specimen, but does not fill the moderators map.
     public Specimen(int seed, int insertion) {
@@ -44,7 +44,7 @@ public class Specimen implements Comparable<Specimen> {
     public Specimen(Random random) {
         this(random.nextInt(), random.nextInt(100));
         for (Vector3i p : positions) {
-            if (p.x == Simulation.dx / 2 && p.z == Simulation.dz / 2) {
+            if (p.x == Algorithm.dx / 2 && p.z == Algorithm.dz / 2) {
                 set(p, -1);
                 continue;
             }
@@ -57,7 +57,7 @@ public class Specimen implements Comparable<Specimen> {
     public void mutate(float rate, Random random) {
         while (random.nextFloat() < rate / (1 + rate)) {
             Vector3i p = positions[random.nextInt(positions.length)];
-            if (p.x == Simulation.dx / 2 && p.z == Simulation.dz / 2) {
+            if (p.x == Algorithm.dx / 2 && p.z == Algorithm.dz / 2) {
                 continue;
             }
             this.set(p, random.nextInt(ReactorModeratorRegistry.registry.length));
@@ -88,19 +88,19 @@ public class Specimen implements Comparable<Specimen> {
     }
 
     // Runs the simulation for 30 seconds, and reports the highest output, and the fuel efficiency (output / consumption) at that moment
-    Result evaluate() {
+    Score evaluate() {
         if (this.value != null) {
             return this.value;
         }
 
         final int fuelStep = 1000; // The amount of insterted fuel in millibuckets. 1000 is realistic, 1 would be "optimal"
 
-        SimulationDescription description = new SimulationDescription(new Vector3i(Simulation.dx, Simulation.dy, Simulation.dz), moderators);
+        SimulationDescription description = new SimulationDescription(new Vector3i(Algorithm.dx, Algorithm.dy, Algorithm.dz), moderators);
         SimulationConfiguration config = new SimulationConfiguration(Config.CONFIG.Reactor, 293.15, true);
         IReactorSimulation simulation = new TimeSlicedReactorSimulation(description, config, seed);
 
         // If you enable this line, the system will use the insertion of the control rods, and therefore try to optimize it
-        // simulation.controlRodAt(Simulation.dx / 2, Simulation.dz / 2).setInsertion(insertion);
+        // simulation.controlRodAt(Algorithm.dx / 2, Algorithm.dz / 2).setInsertion(insertion);
 
         long gen = 0;
         double efficiency = 0;
@@ -121,12 +121,12 @@ public class Specimen implements Comparable<Specimen> {
                 efficiency = g / b;
             }
         }
-        return this.value = new Result((long)gen, efficiency);
+        return this.value = new Score((long)gen, efficiency);
     }
 
     @Override
     public int compareTo(Specimen other) {
-        return -Simulation.compare(this.evaluate(), other.evaluate());
+        return -Algorithm.compare(this.evaluate(), other.evaluate());
     }
 
     // Sets the block at position p to a value.
@@ -149,8 +149,8 @@ public class Specimen implements Comparable<Specimen> {
     // Determines whether the given position is worth optimizing, since radiation only happens from the bottom of a fuel rod,
     // to a distance of 4 blocks (from the outside of the fuel rod block)
     private static boolean insideBounds(Vector3i p) {
-        return (Math.pow(p.x - Simulation.dx / 2, 2) + Math.pow(p.y, 2) + Math.pow(p.z - Simulation.dz / 2, 2) <= 26)
-            || (Math.abs(p.x - Simulation.dx / 2) + Math.abs(p.z - Simulation.dz / 2) == 1);
+        return (Math.pow(p.x - Algorithm.dx / 2, 2) + Math.pow(p.y, 2) + Math.pow(p.z - Algorithm.dz / 2, 2) <= 26)
+            || (Math.abs(p.x - Algorithm.dx / 2) + Math.abs(p.z - Algorithm.dz / 2) == 1);
     }
 
     // Gives the array of block positions that we work with
@@ -158,9 +158,9 @@ public class Specimen implements Comparable<Specimen> {
 
     static {
         List<Vector3i> result = new ArrayList<Vector3i>();
-        for (int x = 0; x < Simulation.dx; x++) {
-            for (int y = 0; y < Simulation.dy; y++) {
-                for (int z = 0; z < Simulation.dz; z++) {
+        for (int x = 0; x < Algorithm.dx; x++) {
+            for (int y = 0; y < Algorithm.dy; y++) {
+                for (int z = 0; z < Algorithm.dz; z++) {
                     Vector3i p = new Vector3i(x, y, z);
                     if (insideBounds(p)) {
                         result.add(p);
@@ -189,9 +189,9 @@ public class Specimen implements Comparable<Specimen> {
         builder.append(insertion);
         builder.append("\n");
 
-        for (int y = 0; y < Simulation.dy; y++) {
-            for (int z = 0; z < Simulation.dz; z++) {
-                for (int x = 0; x < Simulation.dx; x++) {
+        for (int y = 0; y < Algorithm.dy; y++) {
+            for (int z = 0; z < Algorithm.dz; z++) {
+                for (int x = 0; x < Algorithm.dx; x++) {
                     int v = get(new Vector3i(x, y, z));
                     if (v == -1) {
                         builder.append(ReactorModeratorRegistry.Color.RESET);

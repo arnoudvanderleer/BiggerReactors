@@ -1,8 +1,12 @@
 package com.tempestasludi.p41_reactors.data;
 
-public record Result(long gen, double efficiency) {
+public record Score(long yields, double fuelUsage) {
+    public double efficiency() {
+        return yields / fuelUsage;
+    }
+
     @Override
     public final String toString() {
-        return gen + ", " + efficiency;
+        return yields + ", " + fuelUsage + ", " + efficiency();
     }
 }

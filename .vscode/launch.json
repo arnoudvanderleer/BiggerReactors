@@ -19,9 +19,9 @@
         },
         {
             "type": "java",
-            "name": "Simulation",
+            "name": "Algorithm",
             "request": "launch",
-            "mainClass": "com.tempestasludi.p41_reactors.Simulation",
+            "mainClass": "com.tempestasludi.p41_reactors.Algorithm",
             "projectName": "p41_reactors_40ddfbd1"
         }
     ]
