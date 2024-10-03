@@ -102,8 +102,8 @@ public class Specimen implements Comparable<Specimen> {
         // If you enable this line, the system will use the insertion of the control rods, and therefore try to optimize it
         // simulation.controlRodAt(Algorithm.dx / 2, Algorithm.dz / 2).setInsertion(insertion);
 
-        long gen = 0;
-        double efficiency = 0;
+        long yields = 0;
+        double fuelUsage = 0;
 
         int tick = 0;
 
@@ -114,14 +114,14 @@ public class Specimen implements Comparable<Specimen> {
             simulation.tick(true);
             tick++;
 
-            long g = simulation.battery().generatedLastTick();
-            double b = simulation.fuelTank().burnedLastTick();
-            if (g > gen) {
-                gen = g;
-                efficiency = g / b;
+            long y = simulation.battery().generatedLastTick();
+            double u = simulation.fuelTank().burnedLastTick();
+            if (y > yields) {
+                yields = y;
+                fuelUsage = u;
             }
         }
-        return this.value = new Score((long)gen, efficiency);
+        return this.value = new Score(yields, fuelUsage);
     }
 
     @Override
