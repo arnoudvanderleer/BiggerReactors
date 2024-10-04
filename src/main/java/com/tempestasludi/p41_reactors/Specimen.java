@@ -51,6 +51,10 @@ public class Specimen implements Comparable<Specimen> {
                 set(p, -1);
                 continue;
             }
+            if (Math.abs(p.x - Algorithm.dx / 2) +  Math.abs(p.z - Algorithm.dz / 2) == 1) {
+                set(p, ReactorModeratorRegistry.registry.length - 1);
+                continue;
+            }
             set(p, ReactorModeratorRegistry.registry.length - 1);
             // set(p, random.nextInt(ReactorModeratorRegistry.registry.length));
         }

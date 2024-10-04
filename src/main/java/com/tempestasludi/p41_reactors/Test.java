@@ -8,7 +8,6 @@ public class Test {
 
         Specimen s = new Specimen(random);
 
-        System.out.println(s.evaluate());
-        // System.out.println(s);
+        System.out.println(s);
     }
 }
