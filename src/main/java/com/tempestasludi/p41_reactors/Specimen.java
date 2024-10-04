@@ -2,6 +2,8 @@ package com.tempestasludi.p41_reactors;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
@@ -12,6 +14,7 @@ import net.roguelogix.biggerreactors.multiblocks.reactor.simulation.IReactorSimu
 import net.roguelogix.biggerreactors.multiblocks.reactor.simulation.SimulationDescription;
 import net.roguelogix.biggerreactors.multiblocks.reactor.simulation.SimulationConfiguration;
 import net.roguelogix.biggerreactors.multiblocks.reactor.simulation.cpu.TimeSlicedReactorSimulation;
+import net.roguelogix.biggerreactors.multiblocks.reactor.simulation.base.SimUtil;
 import net.roguelogix.biggerreactors.registries.ReactorModeratorRegistry;
 import net.roguelogix.biggerreactors.Config;
 
@@ -144,13 +147,22 @@ public class Specimen implements Comparable<Specimen> {
         return moderators.getOrDefault(p, 0);
     }
 
+    private static final Set<Vector3i> usedPositions = new HashSet<>();
+
+    static {
+        for (List<SimUtil.RayStep> steps : SimUtil.rays) {
+            for (SimUtil.RayStep step : steps) {
+                Vector3i position = new Vector3i(Algorithm.dx / 2, 0, Algorithm.dz / 2).add(step.offset);
+                usedPositions.add(position);
+            }
+        }
+    }
 
     // Utility function for positions().
     // Determines whether the given position is worth optimizing, since radiation only happens from the bottom of a fuel rod,
     // to a distance of 4 blocks (from the outside of the fuel rod block)
     private static boolean insideBounds(Vector3i p) {
-        return (Math.pow(p.x - Algorithm.dx / 2, 2) + Math.pow(p.y, 2) + Math.pow(p.z - Algorithm.dz / 2, 2) <= 26)
-            || (Math.abs(p.x - Algorithm.dx / 2) + Math.abs(p.z - Algorithm.dz / 2) == 1);
+        return usedPositions.contains(p) || (Math.abs(p.x - Algorithm.dx / 2) + Math.abs(p.z - Algorithm.dz / 2) == 1);
     }
 
     // Gives the array of block positions that we work with
@@ -180,6 +192,10 @@ public class Specimen implements Comparable<Specimen> {
 
     @Override
     public String toString() {
+        int columns = 200;
+        int layerSize = (Algorithm.dx + 1) * 2;
+        int layersPerRow = columns / layerSize;
+
         StringBuilder builder = new StringBuilder();
 
         builder.append(evaluate());
@@ -189,16 +205,19 @@ public class Specimen implements Comparable<Specimen> {
         builder.append(insertion);
         builder.append("\n");
 
-        for (int y = 0; y < Algorithm.dy; y++) {
+        for (int y0 = 0; y0 < Algorithm.dy; y0 += layersPerRow) {
             for (int z = 0; z < Algorithm.dz; z++) {
-                for (int x = 0; x < Algorithm.dx; x++) {
-                    int v = get(new Vector3i(x, y, z));
-                    if (v == -1) {
-                        builder.append(ReactorModeratorRegistry.Color.RESET);
-                    } else {
-                        builder.append(ReactorModeratorRegistry.colors[v]);
+                for (int y = y0; y < y0 + layersPerRow && y < Algorithm.dy; y++) {
+                    for (int x = 0; x < Algorithm.dx; x++) {
+                        int v = get(new Vector3i(x, y, z));
+                        if (v == -1) {
+                            builder.append(ReactorModeratorRegistry.Color.RESET);
+                        } else {
+                            builder.append(ReactorModeratorRegistry.colors[v]);
+                        }
+                        builder.append(String.format("%2s", v));
                     }
-                    builder.append(String.format("%2s", v));
+                    builder.append("  ");
                 }
                 builder.append("\n");
             }
