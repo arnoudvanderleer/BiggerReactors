@@ -10,7 +10,7 @@ This employs an evolutionary algorithm to find the best bigger reactor.
 2. Navigate to [`Algorithm.java`](src/main/java/com/tempestasludi/p41_reactors/Algorithm.java)
 3. **Optional**: Tweak the settings for the evolutionary algorithm, at the top of the class definition.
 4. Run `Algorithm.java`. In VScode, you can do this by clicking on the "Run and Debug" icon in the bar on the left. In the panel that appears, click on the dropdown menu, and choose the option "Algorithm" (from the options "Current file", "Algorithm" and "Test").
-5. Tell us about your findings!
+5. [Tell us about your findings](https://www.reddit.com/r/allthemods/comments/1fvuw4g/i_unleashed_an_evolutionary_algorithm_on_bigger/)!
 
 Tested with the following setup (but will probably work with a wide range of setups):
 | Software | Version |
